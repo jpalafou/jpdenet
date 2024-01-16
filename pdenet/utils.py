@@ -33,4 +33,4 @@ def create_batches(key: dtypes.prng_key, arr: jnp.ndarray, n: int) -> list:
     sharr = random.permutation(key, arr)
     batch_size = int(round(sharr.shape[0] / n))
     indices = jnp.arange(1, n) * batch_size
-    return jnp.split(arr, indices)
+    return jnp.split(sharr, indices)

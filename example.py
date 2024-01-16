@@ -13,12 +13,12 @@ PRNGKEY = random.PRNGKey(1)
 params = init_mlp_params(PRNGKEY, sizes=(1, 16, 64, 256, 64, 16, 1))
 
 # hyperparameters
-n_data = 160
+n_data = 320
 num_batches = 10
 num_epochs = 800
-learning_rate = 0.05
-momentum = 0.2
-damping = 0.1
+learning_rate = 0.1
+momentum = 0.1
+damping = 0.0
 print_every = 10
 
 # initialize data
