@@ -1,10 +1,10 @@
-from jax import dtypes
+from jax import dtypes, jit
 import jax.numpy as jnp
 import jax.random as random
 import jax
 
 
-def elementwise_grad(g: callable) -> jnp.ndarray:
+def elementwise_grad(g: callable) -> callable:
     """
     args:
         g       function with scalar output and one multidimensional input
@@ -12,6 +12,7 @@ def elementwise_grad(g: callable) -> jnp.ndarray:
         function which returns the gradient of g wrt each input
     """
 
+    @jit
     def wrapped(x, *rest):
         y, g_vjp = jax.vjp(lambda x: g(x, *rest), x)
         (x_bar,) = g_vjp(jnp.ones_like(y))

@@ -22,10 +22,16 @@ def param_sub(params1: Params_List, params2: Params_List) -> Params_List:
     return out
 
 
-@jit
-def reset_gradients(params: Params_List) -> Params_List:
-    out = [(jnp.zeros_like(w), jnp.zeros_like(b)) for (w, b) in params]
-    return out
+def param_f_apply(f: callable) -> callable:
+    @jit
+    def wrapped(params):
+        out = [(f(w), f(b)) for (w, b) in params]
+        return out
+
+    return wrapped
+
+
+reset_gradients = param_f_apply(jnp.zeros_like)
 
 
 @jit
