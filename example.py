@@ -7,29 +7,28 @@ from pdenet.utils import create_batches
 import matplotlib.pyplot as plt
 import time
 
-PRNGKEY = random.PRNGKey(1)
+key = random.PRNGKey(1)
 
 # initialize model
-params = init_mlp_params(PRNGKEY, sizes=(1, 16, 64, 256, 64, 16, 1))
+params = init_mlp_params(key, sizes=(2, 16, 128, 16, 4, 1))
 
 # hyperparameters
 n_data = 320
 num_batches = 10
 num_epochs = 800
-learning_rate = 0.1
-momentum = 0.1
-damping = 0.0
+learning_rate = 0.2
+momentum = 0.2
+damping = 0.1
 print_every = 10
 
 # initialize data
-dataset = random.uniform(PRNGKEY, (n_data, 1))
+dataset = random.uniform(key, (n_data, 2))
 
-current_key = PRNGKEY
 losses = []
 start_time = time.time()
 for epoch in range(num_epochs):
-    current_key, _ = random.split(current_key)
-    batches = create_batches(current_key, dataset, num_batches)
+    key, _ = random.split(key)
+    batches = create_batches(key, dataset, num_batches)
     prev_dparams = reset_gradients(params)
     for data_batch in batches:
         params, dparams, training_loss = momentum_update(
@@ -41,17 +40,24 @@ for epoch in range(num_epochs):
         print(f"{epoch=}, training loss={training_loss:.4f}, {ela_time=:.2f} s")
     losses.append(training_loss)
 
+# Plot loss at the end of every epoch
 plt.semilogy(losses)
+plt.xlabel("Epochs")
+plt.ylabel("Loss")
 plt.show()
 
-x = jnp.linspace(0, 1, 100).reshape(-1, 1)
-plt.plot(x, u0(x))
-plt.plot(x, batch_forward(params, x))
+# Plot slices of predicted solution to advection PDE
+x = jnp.linspace(0, 1, 100)
+plt.plot(x, u0(x), label="Exact solution at t=0")
+X = jnp.ones((100, 2)) * 0.0
+X = X.at[:, 1].set(x)
+plt.plot(x, batch_forward(params, X), label="t=0")
+X = jnp.ones((100, 2)) * 0.5
+X = X.at[:, 1].set(x)
+plt.plot(x, batch_forward(params, X), label="t=0.5")
+X = jnp.ones((100, 2)) * 1.0
+X = X.at[:, 1].set(x)
+plt.plot(x, batch_forward(params, X), label="t=1")
+plt.xlabel("x")
+plt.legend()
 plt.show()
-
-# x = jnp.linspace(0, 1, 100)
-# X = jnp.zeros((100, 2))
-# X = X.at[:, 1].set(x)
-# plt.plot(x, u0(x))
-# plt.plot(x, batch_forward(params, X))
-# plt.show()

@@ -1,3 +1,5 @@
+# edit functions below to define calculus problem
+
 import jax.numpy as jnp
 from jax import jit
 from pdenet.model import batch_forward, Params_List
@@ -13,30 +15,29 @@ def u0(x: jnp.ndarray) -> jnp.ndarray:
 def initial_condition_loss(params: Params_List, inputs: jnp.ndarray) -> float:
     """
     args:
-        params      [(weights0, biases0), (weights1, biases1), ...]
-        inputs      input with batched first dimension
+        params
+        inputs  batched inputs
     returns:
-        loss for model prediction of u0
+        scalar loss of model evaluated at t=0
     """
-    # initial_inputs = inputs.at[:, 0].set(0.0)
-    # pred = batch_forward(params, initial_inputs)
-    # targ = u0(inputs[:, 1])
-    # return norm(pred - targ)
-    pred = batch_forward(params, inputs)
-    targ = u0(inputs)
+    initial_inputs = inputs.at[:, 0].set(0.0)
+    pred = batch_forward(params, initial_inputs)
+    targ = u0(inputs[:, 1]).reshape(-1, 1)
     return norm(pred - targ)
 
 
-def periodic_boundary_loss(params: Params_List, inputs: jnp.ndarray) -> float:
+def boundary_condition_loss(
+    params: Params_List, inputs: jnp.ndarray, axis: int
+) -> float:
     """
     args:
-        params      [(weights0, biases0), (weights1, biases1), ...]
-        inputs      input with batched first dimension
+        params
+        inputs  batched inputs
     returns:
-        loss for model prediction at boundaries
+        scalar loss of model evaluated at boundaries
     """
-    boundary_inputs0 = inputs.at[:, 1].set(0.0)
-    boundary_inputs1 = inputs.at[:, 1].set(1.0)
+    boundary_inputs0 = inputs.at[:, axis].set(0.0)
+    boundary_inputs1 = inputs.at[:, axis].set(1.0)
     y0 = batch_forward(params, boundary_inputs0)
     y1 = batch_forward(params, boundary_inputs1)
     return norm(y0 - y1)
@@ -46,28 +47,20 @@ def periodic_boundary_loss(params: Params_List, inputs: jnp.ndarray) -> float:
 def residual_loss(params: Params_List, inputs: jnp.ndarray) -> jnp.ndarray:
     """
     args:
-        params      [(weights0, biases0), (weights1, biases1), ...]
-        inputs      input with batched first dimension
+        params
+        inputs  batched inputs
     returns:
-        vector of PDE residuals
+        vector of model PDE residuals
     """
     mlp_grads = elementwise_grad(lambda x: batch_forward(params, x))(inputs)
-    # edit below to modify PDE
     dudt = mlp_grads[:, 0]
     dudx = mlp_grads[:, 1]
-    return dudt + 0.5 * dudx
+    return dudt + dudx
 
 
 @jit
 def loss(params: Params_List, inputs: jnp.ndarray) -> float:
-    """
-    args:
-        params              [(weights0, biases0), (weights1, biases1), ...]
-        inputs              input with batched first dimension
-    returns:
-        Deep Galerkin Method loss
-    """
     initial_loss = initial_condition_loss(params, inputs)
-    # boundary_loss = periodic_boundary_loss(params, inputs)
-    # PDE_residual_loss = norm(residual_loss(params, inputs))
-    return initial_loss
+    boundary_loss = boundary_condition_loss(params, inputs, 1)
+    PDE_residual_loss = norm(residual_loss(params, inputs))
+    return initial_loss + boundary_loss + PDE_residual_loss
