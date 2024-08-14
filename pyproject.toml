@@ -1,0 +1,9 @@
+[project]
+name = "jpdenet"
+version = "0.0.0"
+description = "Train neural networks to solve initial value PDE problems."
+authors = [
+    {name = "Jonathan Palafoutas", email = "jpalafou@princeton.edu"}
+]
+dependencies = ["matplotlib", "jax"]
+
